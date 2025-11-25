@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../src/process.h"
+#include "process.h"
 
-void scheduler_priority(Process procs[], int n) {
+void priorite(Process procs[], int n) {
 
     printf("\n═══════════════════════════════════════════════════\n");
     printf("           ORDONNANCEMENT PRIORITÉ PRÉEMPTIVE\n");
@@ -97,4 +97,6 @@ void scheduler_priority(Process procs[], int n) {
     }
 
     printf("└──────┴─────────┴───────┴─────────┴───────┴────────────┴─────────┘\n\n");
+     printf("Temps de rotation moyen: %.2f\n", sumT / n);
+    printf("Temps d'attente moyen:   %.2f\n\n", sumW / n);
 }
