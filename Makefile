@@ -1,12 +1,14 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99 -Isrc
+CFLAGS = -Wall -Wextra -std=c99 -Isrc `pkg-config --cflags gtk+-3.0`
+LDFLAGS = -ldl `pkg-config --libs gtk+-3.0`
+
 SRC_DIR = src
 BUILD_DIR = build
 
 # Fichiers source principaux
-SRC = $(SRC_DIR)/main.c $(SRC_DIR)/menu.c $(SRC_DIR)/process.c
+SRC = $(SRC_DIR)/main.c $(SRC_DIR)/menu.c $(SRC_DIR)/process.c $(SRC_DIR)/gui.c
 
-# Fichiers objets (uniquement les fichiers centraux)
+# Fichiers objets
 OBJ = $(SRC:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 EXEC = ordonnanceur
@@ -18,7 +20,7 @@ $(BUILD_DIR):
 
 # Compilation du programme principal
 $(EXEC): $(OBJ)
-	$(CC) $(CFLAGS) -o $@ $^ -ldl
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 # Compilation des .o du dossier src/
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
@@ -27,6 +29,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 # Nettoyage
 clean:
 	rm -rf $(BUILD_DIR) $(EXEC)
+	rm -f politiques/*.so
 
 # Installation facultative
 install: $(EXEC)
