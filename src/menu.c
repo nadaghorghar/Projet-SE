@@ -53,7 +53,15 @@ void afficher_policies() {
     printf("\n=== Politiques détectées dans /politiques ===\n");
 
     for (int i = 0; i < politique_count; i++) {
-        printf("%d. %s\n", i + 1, politiques[i]);
+        // Créer une copie du nom sans l'extension .c
+        char nom_sans_extension[200];
+        strcpy(nom_sans_extension, politiques[i]);
+        
+        // Enlever les 2 derniers caractères (".c")
+        int len = strlen(nom_sans_extension);
+        nom_sans_extension[len - 2] = '\0';
+        
+        printf("%d. %s\n", i + 1, nom_sans_extension);
     }
 }
 
