@@ -53,7 +53,7 @@ The project uses the following technologies and concepts:
 - **Platform : Linux**  
   The project is designed to be compiled and executed on Linux. All scripts and the Makefile rely on Linux commands.
 
-- **Core Concepts and Tools: :**
+- **Core Concepts and Tools:**
   - **Data Structures** : To store and manage process information. 
   - **Makefile** : To automate compilation and execution.
   - **Modular Architecture** : To allow easy integration of new policies or components.
@@ -127,7 +127,7 @@ make
 
 ### Run
 ```bash
-./ordonnanceur chemin/vers/processus.txt
+./ordonnanceur path/to/processus.txt
 ```
 
 ###  Clean Build Files
