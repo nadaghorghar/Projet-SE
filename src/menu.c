@@ -5,6 +5,7 @@
 #include <dlfcn.h>
 #include "menu.h"
 #include "process.h"
+#include "gui.h"
 
 #define MAX_POLITIQUES 100
 
@@ -25,7 +26,6 @@ void charger_politiques() {
     politique_count = 0;
 
     while ((entry = readdir(dir)) != NULL) {
-
         // Ignorer . et ..
         if (strcmp(entry->d_name, ".") == 0 ||
             strcmp(entry->d_name, "..") == 0)
@@ -53,15 +53,7 @@ void afficher_policies() {
     printf("\n=== Politiques détectées dans /politiques ===\n");
 
     for (int i = 0; i < politique_count; i++) {
-        // Créer une copie du nom sans l'extension .c
-        char nom_sans_extension[200];
-        strcpy(nom_sans_extension, politiques[i]);
-        
-        // Enlever les 2 derniers caractères (".c")
-        int len = strlen(nom_sans_extension);
-        nom_sans_extension[len - 2] = '\0';
-        
-        printf("%d. %s\n", i + 1, nom_sans_extension);
+        printf("%d. %s\n", i + 1, politiques[i]);
     }
 }
 
@@ -80,36 +72,39 @@ int choisir_politique() {
         exit(1);
     }
 
-    return choix - 1; // index réel
+    return choix - 1;
 }
 
 /* -----------------------------------------
    Exécuter la politique choisie
 ------------------------------------------ */
 void executer_politique(int index, Process procs[], int count) {
-
     char path[300];
     char lib[300];
 
-    // Ex : "politiques/fifo.c"
     snprintf(path, sizeof(path), "politiques/%s", politiques[index]);
-
-    // Ex : "politiques/fifo.c.so"
     snprintf(lib, sizeof(lib), "politiques/%s.so", politiques[index]);
 
     // Nettoyer les anciens .so
     remove(lib);
 
-    // Compilation dynamique
+    // IMPORTANT : Désactiver le mode capture pour le mode console
+    capture_mode = 0;
+
+    // Compilation dynamique avec export des symboles globaux
     char cmd[800];
     snprintf(cmd, sizeof(cmd),
-             "gcc -shared -fPIC -Isrc %s -o %s",
+             "gcc -shared -fPIC -Isrc %s build/gui_globals.o -o %s",
              path, lib);
 
-    system(cmd);
+    int compile_result = system(cmd);
+    if (compile_result != 0) {
+        printf("Erreur lors de la compilation de la politique.\n");
+        exit(1);
+    }
 
-    // Charger la bibliothèque
-    void *handle = dlopen(lib, RTLD_NOW);
+    // Charger la bibliothèque avec RTLD_LAZY
+    void *handle = dlopen(lib, RTLD_LAZY | RTLD_GLOBAL);
     if (!handle) {
         printf("Erreur dlopen: %s\n", dlerror());
         exit(1);
@@ -118,45 +113,37 @@ void executer_politique(int index, Process procs[], int count) {
     // Nom de la fonction = nom du fichier sans .c
     char func_name[200];
     strcpy(func_name, politiques[index]);
-    func_name[strlen(func_name) - 2] = '\0'; // enlever ".c"
+    func_name[strlen(func_name) - 2] = '\0';
 
     printf("\n>>> Exécution de : %s\n", func_name);
 
-    /* ----------------------------
-       Cas particulier Round Robin
-       Fonction = round_robin(procs, count, quantum)
-    ----------------------------- */
+    /* Round Robin */
     if (strcmp(func_name, "round_robin") == 0) {
-
         int q;
         printf("➡ Vous avez choisi Round Robin.\n");
         printf("➡ Entrez le quantum : ");
         scanf("%d", &q);
-        getchar(); // vider buffer
+        getchar();
 
         if (q <= 0) q = 1;
 
-        // Charger la fonction RR
         void (*rr_func)(Process*, int, int) = dlsym(handle, func_name);
 
         if (!rr_func) {
             printf("Erreur dlsym: %s\n", dlerror());
+            dlclose(handle);
             exit(1);
         }
 
-        // Exécuter
         rr_func(procs, count, q);
     }
-
-    /* ----------------------------
-       Autres politiques
-       Fonction = fifo(procs, count)
-    ----------------------------- */
+    /* Autres politiques */
     else {
         void (*alg_func)(Process*, int) = dlsym(handle, func_name);
 
         if (!alg_func) {
             printf("Erreur dlsym: %s\n", dlerror());
+            dlclose(handle);
             exit(1);
         }
 
