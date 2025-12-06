@@ -4,16 +4,14 @@
 #include "process.h"
 #define MAX_PRIO 6
 #define FAMINE_THRESHOLD 6
-#define FATIGUE_THRESHOLD 3
 
 /*
  * RÈGLES DE L'ÉNONCÉ:
  * 1. Quantum: Prio 5,4 → 1 | Prio 3,2 → 2 | Prio 1,0 → 4
  * 2. Priorité -1 SEULEMENT après avoir terminé un quantum complet (min 0)
  * 3. Si préemption avant fin du quantum → priorité INCHANGÉE
- * 4. Fatigue CPU: >3 quanta consécutifs du MÊME processus → repos 1 unité
- * 5. Anti-famine: attente >6 unités consécutives → priorité +1 (max 5)
- * 6. Préemption: si processus de priorité supérieure arrive
+ * 4. Anti-famine: attente ≥6 unités consécutives → priorité +1 (max 5)
+ * 5. Préemption: si processus de priorité supérieure arrive
  */
 
 // File de priorité
@@ -32,11 +30,8 @@ typedef struct {
     int *timeline;       // Historique d'exécution
     int timeline_len;
     int running;         // Processus en cours (-1 si aucun)
-    int quanta_count;    // Quanta consécutifs du MÊME processus
     int quantum_used;    // Unités utilisées dans le quantum actuel
     int quantum_size;    // Taille du quantum actuel
-    int cpu_resting;     // CPU en repos (fatigue)
-    int last_proc;       // Dernier processus ayant TERMINÉ un quantum
 } State;
 
 int get_quantum(int prio) {
@@ -103,17 +98,14 @@ void init_state(State *s, int n) {
     for (int i = 0; i < MAX_PRIO; i++) q_init(&s->queues[i]);
     s->time = 0;
     s->running = -1;
-    s->last_proc = -1;
-    s->quanta_count = 0;
     s->quantum_used = 0;
     s->quantum_size = 0;
-    s->cpu_resting = 0;
     s->timeline_len = 0;
     
     s->wait_time = calloc(n, sizeof(int));
     s->first_run = malloc(n * sizeof(int));
     s->end_time = malloc(n * sizeof(int));
-    s->timeline = malloc(1000 * sizeof(int));
+    s->timeline = malloc(2000 * sizeof(int));
     
     for (int i = 0; i < n; i++) {
         s->first_run[i] = -1;
@@ -126,24 +118,6 @@ void free_state(State *s) {
     free(s->first_run);
     free(s->end_time);
     free(s->timeline);
-}
-
-void print_queues(State *s, Process procs[]) {
-    printf("      [Files: ");
-    int empty = 1;
-    for (int p = MAX_PRIO - 1; p >= 0; p--) {
-        if (s->queues[p].size > 0) {
-            empty = 0;
-            printf("Prio%d(", p);
-            for (int i = 0; i < s->queues[p].size; i++) {
-                printf("%s", procs[s->queues[p].items[i]].name);
-                if (i < s->queues[p].size - 1) printf(",");
-            }
-            printf(") ");
-        }
-    }
-    if (empty) printf("vides");
-    printf("]\n");
 }
 
 void multi_level(Process procs[], int n) {
@@ -163,8 +137,7 @@ void multi_level(Process procs[], int n) {
     printf("║  • Quantum: Priorité 5,4 → 1 | Priorité 3,2 → 2 | Priorité 1,0 → 4   ║\n");
     printf("║  • Priorité -1 UNIQUEMENT si quantum TERMINÉ (jamais < 0)            ║\n");
     printf("║  • Préemption si processus plus prioritaire arrive (prio inchangée)  ║\n");
-    printf("║  • Fatigue CPU: >%d quanta consécutifs → repos 1 unité                ║\n", FATIGUE_THRESHOLD);
-    printf("║  • Anti-famine: attente >%d unités → priorité +1 (max 5)              ║\n", FAMINE_THRESHOLD);
+    printf("║  • Anti-famine: attente ≥%d unités → priorité +1 (max 5)              ║\n", FAMINE_THRESHOLD);
     printf("╚═══════════════════════════════════════════════════════════════════════╝\n\n");
     
     printf("PROCESSUS EN ENTRÉE:\n");
@@ -180,35 +153,28 @@ void multi_level(Process procs[], int n) {
     
     int done = 0;
     
-    while (done < n && s.time < 500) {
+    while (done < n && s.time < 10000) {
         
-        // ÉTAPE 1: CPU en repos (fatigue)?
-        if (s.cpu_resting) {
-            s.timeline[s.timeline_len++] = -1;
-            s.cpu_resting = 0;
-            for (int i = 0; i < n; i++)
-                if (in_any_queue(&s, i))
-                    s.wait_time[i]++;
-            s.time++;
-            continue;
-        }
-        
-        // ÉTAPE 2: Arrivée de nouveaux processus
+        // ========== ÉTAPE 1: Arrivée de nouveaux processus ==========
         for (int i = 0; i < n; i++) {
             if (procs[i].arrival == s.time && procs[i].remaining_time > 0) {
                 if (!in_any_queue(&s, i) && s.running != i) {
-                    q_push(&s.queues[procs[i].priority], i);
+                    int pr = procs[i].priority;
+                    if (pr < 0) pr = 0;
+                    if (pr >= MAX_PRIO) pr = MAX_PRIO - 1;
+                    q_push(&s.queues[pr], i);
                 }
             }
         }
         
-        // ÉTAPE 3: Anti-famine (attente > 6 unités)
+        // ========== ÉTAPE 2: Anti-famine (attente ≥ FAMINE_THRESHOLD) ==========
         for (int i = 0; i < n; i++) {
-            if (s.wait_time[i] > FAMINE_THRESHOLD && procs[i].priority < 5) {
+            if (s.wait_time[i] >= FAMINE_THRESHOLD && procs[i].priority < 5 && procs[i].remaining_time > 0) {
                 for (int p = 0; p < MAX_PRIO; p++) {
                     if (q_contains(&s.queues[p], i)) {
                         q_remove(&s.queues[p], i);
                         procs[i].priority++;
+                        if (procs[i].priority > 5) procs[i].priority = 5;
                         q_push(&s.queues[procs[i].priority], i);
                         s.wait_time[i] = 0;
                         break;
@@ -217,10 +183,30 @@ void multi_level(Process procs[], int n) {
             }
         }
         
-        // ÉTAPE 4: Vérifier PRÉEMPTION
-        int best_waiting = highest_prio_waiting(&s);
-        if (s.running != -1 && best_waiting > procs[s.running].priority) {
-            if (s.quantum_used < s.quantum_size) {
+        // ========== ÉTAPE 3: Vérifier fin de quantum du processus en cours ==========
+        if (s.running != -1 && s.quantum_used >= s.quantum_size && s.quantum_size > 0) {
+            // Quantum terminé → diminuer la priorité
+            if (procs[s.running].priority > 0)
+                procs[s.running].priority--;
+            
+            // Remettre en file avec nouvelle priorité
+            int newp = procs[s.running].priority;
+            if (newp < 0) newp = 0;
+            if (newp >= MAX_PRIO) newp = MAX_PRIO - 1;
+            q_push(&s.queues[newp], s.running);
+            
+            // Libérer le CPU pour permettre la resélection
+            s.running = -1;
+            s.quantum_used = 0;
+            s.quantum_size = 0;
+        }
+        
+        // ========== ÉTAPE 4: Vérifier PRÉEMPTION ==========
+        if (s.running != -1) {
+            int best_waiting = highest_prio_waiting(&s);
+            // Préemption seulement si un processus en attente a priorité STRICTEMENT > processus actuel
+            if (best_waiting > procs[s.running].priority) {
+                // Préemption: remettre dans la file SANS changer la priorité
                 q_push(&s.queues[procs[s.running].priority], s.running);
                 s.running = -1;
                 s.quantum_used = 0;
@@ -228,32 +214,8 @@ void multi_level(Process procs[], int n) {
             }
         }
         
-        // ÉTAPE 5: Vérifier fin de quantum
-        if (s.running != -1 && s.quantum_used >= s.quantum_size && s.quantum_size > 0) {
-            if (procs[s.running].priority > 0)
-                procs[s.running].priority--;
-            
-            if (s.running == s.last_proc) {
-                s.quanta_count++;
-            } else {
-                s.quanta_count = 1;
-            }
-            s.last_proc = s.running;
-            
-            if (s.quanta_count > FATIGUE_THRESHOLD) {
-                s.cpu_resting = 1;
-                s.quanta_count = 0;
-                s.last_proc = -1;
-            }
-            
-            q_push(&s.queues[procs[s.running].priority], s.running);
-            s.running = -1;
-            s.quantum_used = 0;
-            s.quantum_size = 0;
-        }
-        
-        // ÉTAPE 6: Sélectionner prochain processus
-        if (s.running == -1 && !s.cpu_resting) {
+        // ========== ÉTAPE 5: Sélectionner prochain processus ==========
+        if (s.running == -1) {
             int next = select_next(&s);
             if (next != -1) {
                 s.running = next;
@@ -264,7 +226,7 @@ void multi_level(Process procs[], int n) {
             }
         }
         
-        // ÉTAPE 7: Exécuter 1 unité de temps
+        // ========== ÉTAPE 6: Exécuter 1 unité de temps ==========
         if (s.running == -1) {
             s.timeline[s.timeline_len++] = -1;
         } else {
@@ -273,18 +235,17 @@ void multi_level(Process procs[], int n) {
             s.quantum_used++;
             s.wait_time[s.running] = 0;
             
+            // Si le processus se termine
             if (procs[s.running].remaining_time == 0) {
                 s.end_time[s.running] = s.time + 1;
                 done++;
-                s.last_proc = -1;
-                s.quanta_count = 0;
                 s.running = -1;
                 s.quantum_used = 0;
                 s.quantum_size = 0;
             }
         }
         
-        // Augmenter attente des processus en file
+        // ========== ÉTAPE 7: Augmenter attente des processus en file ==========
         for (int i = 0; i < n; i++) {
             if (s.running != i && in_any_queue(&s, i))
                 s.wait_time[i]++;
