@@ -119,7 +119,7 @@ P3 4 3 2
 ## Compilation and Execution
 
 ### Compile
-Le projet est compilé via un Makefile :
+The project is compiled using a Makefile:
 
 ```bash
 make
