@@ -71,9 +71,29 @@ void afficher_policies() {
 int choisir_politique() {
     char input[50];
     int choix;
+    int fifo_index = -1;
 
-    printf("\nChoisissez une politique : ");
+    // Trouver l'index de FIFO
+    for (int i = 0; i < politique_count; i++) {
+        if (strcmp(politiques[i], "fifo.c") == 0) {
+            fifo_index = i;
+            break;
+        }
+    }
+
+    printf("\nChoisissez une politique (défaut: FIFO) : ");
     fgets(input, sizeof(input), stdin);
+
+    // Si l'utilisateur appuie simplement sur Entrée, utiliser FIFO
+    if (input[0] == '\n' || strlen(input) == 1) {
+        if (fifo_index != -1) {
+            printf("→ FIFO sélectionné par défaut\n");
+            return fifo_index;
+        } else {
+            printf("Erreur : FIFO non trouvé. Veuillez choisir manuellement.\n");
+            exit(1);
+        }
+    }
 
     if (sscanf(input, "%d", &choix) != 1 || choix < 1 || choix > politique_count) {
         printf("Choix invalide.\n");
