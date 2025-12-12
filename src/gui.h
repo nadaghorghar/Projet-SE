@@ -31,5 +31,7 @@ void fifo(Process procs[], int n);
 void round_robin(Process procs[], int n, int quantum);
 void priorite(Process procs[], int n);
 void multi_level(Process procs[], int n);
+void multi_level_static(Process procs[], int n);
+
 
 #endif

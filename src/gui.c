@@ -557,6 +557,26 @@ static void on_run_multilevel(GtkWidget *widget, gpointer data) {
     show_results_window(window);
 }
 
+static void on_run_multilevel_static(GtkWidget *widget, gpointer data) {
+    GtkWidget *window = GTK_WIDGET(data);
+
+    if (current_result) {
+        if (current_result->processes) free(current_result->processes);
+        free(current_result);
+    }
+
+    current_result = malloc(sizeof(SchedulingResult));
+    if (!current_result) return;
+
+    capture_mode = 1;
+    multi_level_static(g_processes, g_process_count);  // Appel à ton algorithme
+    capture_mode = 0;
+
+    show_results_window(window);
+}
+
+
+
 void lancer_interface_gtk(Process procs[], int count) {
     g_processes = procs;
     g_process_count = count;
@@ -645,6 +665,14 @@ void lancer_interface_gtk(Process procs[], int count) {
     gtk_widget_set_halign(btn_multilevel, GTK_ALIGN_CENTER);
     g_signal_connect(btn_multilevel, "clicked", G_CALLBACK(on_run_multilevel), window);
     gtk_box_pack_start(GTK_BOX(vbox), btn_multilevel, FALSE, FALSE, 8);
+    
+    GtkWidget *btn_multilevel_static = gtk_button_new_with_label("🏢  Multi-Level Static");
+    gtk_widget_set_size_request(btn_multilevel_static, 500, 65);
+    gtk_widget_set_halign(btn_multilevel_static, GTK_ALIGN_CENTER);
+    g_signal_connect(btn_multilevel_static, "clicked",          G_CALLBACK(on_run_multilevel_static), window);
+    gtk_box_pack_start(GTK_BOX(vbox), btn_multilevel_static, FALSE, FALSE, 8);
+
+
     
     gtk_container_add(GTK_CONTAINER(window), vbox);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);

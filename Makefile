@@ -18,7 +18,8 @@ OBJECTS = \
 	$(BUILD_DIR)/fifo.o \
 	$(BUILD_DIR)/round_robin.o \
 	$(BUILD_DIR)/priorite.o \
-	$(BUILD_DIR)/multi_level.o
+	$(BUILD_DIR)/multi_level.o \
+	$(BUILD_DIR)/multi_level_static.o
 
 all: $(BUILD_DIR) $(TARGET)
 
@@ -54,6 +55,10 @@ $(BUILD_DIR)/priorite.o: $(POLITIQUES_DIR)/priorite.c
 
 $(BUILD_DIR)/multi_level.o: $(POLITIQUES_DIR)/multi_level.c
 	$(CC) $(CFLAGS) -c $< -o $@
+	
+$(BUILD_DIR)/multi_level_static.o: $(POLITIQUES_DIR)/multi_level_static.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
 
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET) politiques/*.so
