@@ -3,7 +3,6 @@
 #include <string.h>
 #include "console_display.h"
 
-
 static void display_header(const char *algo_name, int quantum, const char *rules);
 static void display_input_processes(Process procs[], int n, int show_prio);
 static void display_timeline(int *timeline, int timeline_len, Process procs[]);
@@ -23,13 +22,11 @@ void display_console_results(
         return;
     }
     
-    
     int show_prio = (strstr(algo_name, "Priorité") != NULL || 
                      strstr(algo_name, "Multi-Level") != NULL ||
                      strstr(algo_name, "Multi-Niveau") != NULL);
     int show_init_prio = (result->init_prio != NULL);
     
-   
     display_header(algo_name, quantum, rules);
     display_input_processes(result->procs, result->n, show_prio);
     
@@ -45,7 +42,6 @@ void display_console_results(
     display_summary(result->procs, result->n, result->start, result->end, result->total_time);
 }
 
-
 static void display_header(const char *algo_name, int quantum, const char *rules) {
     if (rules != NULL) {
         printf("\n%s\n", rules);
@@ -60,12 +56,10 @@ static void display_header(const char *algo_name, int quantum, const char *rules
     }
 }
 
-
 static void display_input_processes(Process procs[], int n, int show_prio) {
     printf("PROCESSUS EN ENTRÉE:\n");
     
     if (show_prio) {
-        
         printf("┌──────┬─────────┬───────┬──────────┐\n");
         printf("│ Nom  │ Arrivée │ Durée │ Priorité │\n");
         printf("├──────┼─────────┼───────┼──────────┤\n");
@@ -76,7 +70,6 @@ static void display_input_processes(Process procs[], int n, int show_prio) {
         }
         printf("└──────┴─────────┴───────┴──────────┘\n\n");
     } else {
-        
         printf("┌──────┬─────────┬───────┐\n");
         printf("│ Nom  │ Arrivée │ Durée │\n");
         printf("├──────┼─────────┼───────┤\n");
@@ -103,7 +96,6 @@ static void display_timeline(int *timeline, int timeline_len, Process procs[]) {
     printf("\n\n");
 }
 
-
 static void display_gantt(int *timeline, int timeline_len, Process procs[], int n) {
     printf("DIAGRAMME DE GANTT:\n");
     printf("───────────────────\n");
@@ -122,13 +114,11 @@ static void display_gantt(int *timeline, int timeline_len, Process procs[], int 
     printf("\n");
 }
 
-
 static void display_statistics(Process procs[], int n, int *start, int *end, 
                                int *init_prio, int show_init_prio) {
     printf("STATISTIQUES DES PROCESSUS:\n");
     
     if (show_init_prio && init_prio) {
-        
         printf("┌──────┬─────────┬───────┬──────────┬───────┬─────┬────────────┬─────────┐\n");
         printf("│ Proc │ Arrivée │ Durée │ Prio_ini │ Début │ Fin │ Turnaround │ Attente │\n");
         printf("├──────┼─────────┼───────┼──────────┼───────┼─────┼────────────┼─────────┤\n");
@@ -141,13 +131,12 @@ static void display_statistics(Process procs[], int n, int *start, int *end,
         }
         printf("└──────┴─────────┴───────┴──────────┴───────┴─────┴────────────┴─────────┘\n");
     } else {
-        
         printf("┌──────┬─────────┬───────┬───────┬─────┬────────────┬─────────┐\n");
         printf("│ Proc │ Arrivée │ Durée │ Début │ Fin │ Turnaround │ Attente │\n");
         printf("├──────┼─────────┼───────┼───────┼─────┼────────────┼─────────┤\n");
         for (int i = 0; i < n; i++) {
             int turn = end[i] - procs[i].arrival;
-            int wait = start[i] - procs[i].arrival;
+            int wait = turn - procs[i].duration;
             printf("│ %-4s │ %7d │ %5d │ %5d │ %3d │ %10d │ %7d │\n",
                    procs[i].name, procs[i].arrival, procs[i].duration,
                    start[i], end[i], turn, wait);
@@ -157,7 +146,6 @@ static void display_statistics(Process procs[], int n, int *start, int *end,
     printf("\n");
 }
 
-
 static void display_summary(Process procs[], int n, int *start, int *end, int total_time) {
     float sum_turnaround = 0.0f, sum_wait = 0.0f;
     int valid_count = 0;
@@ -165,7 +153,7 @@ static void display_summary(Process procs[], int n, int *start, int *end, int to
     for (int i = 0; i < n; i++) {
         if (end[i] >= 0) {
             int turnaround = end[i] - procs[i].arrival;
-            int wait = start[i] - procs[i].arrival;
+            int wait = turnaround - procs[i].duration;
             sum_turnaround += turnaround;
             sum_wait += wait;
             valid_count++;
@@ -179,3 +167,4 @@ static void display_summary(Process procs[], int n, int *start, int *end, int to
     if (total_time > 0) printf("Temps total simulation:  %d unités\n", total_time);
     printf("\n");
 }
+
