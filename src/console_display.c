@@ -1,9 +1,9 @@
-/* src/console_display.c - Module d'affichage console centralisé */
+
 #include <stdio.h>
 #include <string.h>
 #include "console_display.h"
 
-/* Fonctions auxiliaires internes */
+
 static void display_header(const char *algo_name, int quantum, const char *rules);
 static void display_input_processes(Process procs[], int n, int show_prio);
 static void display_timeline(int *timeline, int timeline_len, Process procs[]);
@@ -12,9 +12,6 @@ static void display_statistics(Process procs[], int n, int *start, int *end,
                                int *init_prio, int show_init_prio);
 static void display_summary(Process procs[], int n, int *start, int *end, int total_time);
 
-/* ========================================
-   FONCTION PRINCIPALE D'AFFICHAGE
-======================================== */
 void display_console_results(
     const char *algo_name,
     int quantum,
@@ -26,13 +23,13 @@ void display_console_results(
         return;
     }
     
-    // Déterminer si on doit afficher la priorité
+    
     int show_prio = (strstr(algo_name, "Priorité") != NULL || 
                      strstr(algo_name, "Multi-Level") != NULL ||
                      strstr(algo_name, "Multi-Niveau") != NULL);
     int show_init_prio = (result->init_prio != NULL);
     
-    // Affichage structuré
+   
     display_header(algo_name, quantum, rules);
     display_input_processes(result->procs, result->n, show_prio);
     
@@ -48,9 +45,7 @@ void display_console_results(
     display_summary(result->procs, result->n, result->start, result->end, result->total_time);
 }
 
-/* ========================================
-   AFFICHER L'EN-TÊTE
-======================================== */
+
 static void display_header(const char *algo_name, int quantum, const char *rules) {
     if (rules != NULL) {
         printf("\n%s\n", rules);
@@ -65,14 +60,12 @@ static void display_header(const char *algo_name, int quantum, const char *rules
     }
 }
 
-/* ========================================
-   AFFICHER LES PROCESSUS EN ENTRÉE
-======================================== */
+
 static void display_input_processes(Process procs[], int n, int show_prio) {
     printf("PROCESSUS EN ENTRÉE:\n");
     
     if (show_prio) {
-        // Avec priorité
+        
         printf("┌──────┬─────────┬───────┬──────────┐\n");
         printf("│ Nom  │ Arrivée │ Durée │ Priorité │\n");
         printf("├──────┼─────────┼───────┼──────────┤\n");
@@ -83,7 +76,7 @@ static void display_input_processes(Process procs[], int n, int show_prio) {
         }
         printf("└──────┴─────────┴───────┴──────────┘\n\n");
     } else {
-        // Sans priorité
+        
         printf("┌──────┬─────────┬───────┐\n");
         printf("│ Nom  │ Arrivée │ Durée │\n");
         printf("├──────┼─────────┼───────┤\n");
@@ -95,9 +88,6 @@ static void display_input_processes(Process procs[], int n, int show_prio) {
     }
 }
 
-/* ========================================
-   AFFICHER LA CHRONOLOGIE
-======================================== */
 static void display_timeline(int *timeline, int timeline_len, Process procs[]) {
     printf("CHRONOLOGIE D'EXÉCUTION:\n");
     printf("─────────────────────────\n");
@@ -113,9 +103,7 @@ static void display_timeline(int *timeline, int timeline_len, Process procs[]) {
     printf("\n\n");
 }
 
-/* ========================================
-   AFFICHER LE DIAGRAMME DE GANTT
-======================================== */
+
 static void display_gantt(int *timeline, int timeline_len, Process procs[], int n) {
     printf("DIAGRAMME DE GANTT:\n");
     printf("───────────────────\n");
@@ -134,15 +122,13 @@ static void display_gantt(int *timeline, int timeline_len, Process procs[], int 
     printf("\n");
 }
 
-/* ========================================
-   AFFICHER LES STATISTIQUES
-======================================== */
+
 static void display_statistics(Process procs[], int n, int *start, int *end, 
                                int *init_prio, int show_init_prio) {
     printf("STATISTIQUES DES PROCESSUS:\n");
     
     if (show_init_prio && init_prio) {
-        // Multi-level dynamique ou priorité
+        
         printf("┌──────┬─────────┬───────┬──────────┬───────┬─────┬────────────┬─────────┐\n");
         printf("│ Proc │ Arrivée │ Durée │ Prio_ini │ Début │ Fin │ Turnaround │ Attente │\n");
         printf("├──────┼─────────┼───────┼──────────┼───────┼─────┼────────────┼─────────┤\n");
@@ -155,7 +141,7 @@ static void display_statistics(Process procs[], int n, int *start, int *end,
         }
         printf("└──────┴─────────┴───────┴──────────┴───────┴─────┴────────────┴─────────┘\n");
     } else {
-        // FIFO, Round Robin simple
+        
         printf("┌──────┬─────────┬───────┬───────┬─────┬────────────┬─────────┐\n");
         printf("│ Proc │ Arrivée │ Durée │ Début │ Fin │ Turnaround │ Attente │\n");
         printf("├──────┼─────────┼───────┼───────┼─────┼────────────┼─────────┤\n");
@@ -171,9 +157,7 @@ static void display_statistics(Process procs[], int n, int *start, int *end,
     printf("\n");
 }
 
-/* ========================================
-   AFFICHER LE RÉSUMÉ
-======================================== */
+
 static void display_summary(Process procs[], int n, int *start, int *end, int total_time) {
     float sum_turnaround = 0.0f, sum_wait = 0.0f;
     int valid_count = 0;
