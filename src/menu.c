@@ -25,7 +25,7 @@ void charger_politiques() {
 
     while ((entry = readdir(dir)) != NULL) {
 
-        // Ignorer . et ..
+        
         if (strcmp(entry->d_name, ".") == 0 ||
             strcmp(entry->d_name, "..") == 0)
             continue;
@@ -35,7 +35,7 @@ void charger_politiques() {
         if (len < 3 || strcmp(entry->d_name + len - 2, ".c") != 0)
             continue;
 
-        // Ajouter
+        
         strcpy(politiques[politique_count], entry->d_name);
         politique_count++;
     }
@@ -50,11 +50,11 @@ void afficher_policies() {
     printf("\n=== Politiques détectées dans /politiques ===\n");
 
     for (int i = 0; i < politique_count; i++) {
-        // Créer une copie du nom sans l'extension .c
+        
         char nom_sans_extension[200];
         strcpy(nom_sans_extension, politiques[i]);
         
-        // Enlever les 2 derniers caractères (".c")
+        
         int len = strlen(nom_sans_extension);
         nom_sans_extension[len - 2] = '\0';
         
@@ -89,7 +89,7 @@ int est_nombre_valide(const char *str, int *valeur) {
     }
     
     *valeur = (int)val;
-    return 1; // Nombre valide
+    return 1; 
 }
 
 
@@ -157,7 +157,7 @@ int choisir_politique() {
             }
         }
         
-        // Choix valide
+        
         return choix - 1;
     }
 }
@@ -185,7 +185,7 @@ void executer_politique(int index, Process procs[], int count) {
 
     system(cmd);
 
-    // Charger la bibliothèque
+    
     void *handle = dlopen(lib, RTLD_NOW);
     if (!handle) {
         printf("Erreur dlopen: %s\n", dlerror());
@@ -205,7 +205,7 @@ void executer_politique(int index, Process procs[], int count) {
         printf("➡ Vous avez choisi Round Robin.\n");
         printf("➡ Entrez le quantum : ");
         scanf("%d", &q);
-        getchar(); // vider buffer
+        getchar(); 
 
         if (q <= 0) q = 1;
 
