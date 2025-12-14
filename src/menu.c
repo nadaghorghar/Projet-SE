@@ -43,7 +43,7 @@ void charger_politiques() {
     closedir(dir);
 }
 
-=
+
 void afficher_policies() {
     charger_politiques();
 
