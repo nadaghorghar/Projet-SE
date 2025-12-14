@@ -1,3 +1,4 @@
+
 #include <gtk/gtk.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,25 +8,25 @@
 #include "gui.h"
 #include "process.h"
 
-// Variables globales pour l'interface
+
 static Process *g_processes = NULL;
 static int g_process_count = 0;
 static GtkWidget *g_drawing_area = NULL;
 static int selected_algo = 0;
 static int rr_quantum = 2;
 
-// Structures pour stocker les algorithmes détectés
+
 typedef struct {
-    char filename[200];     // Ex: "fifo.c"
-    char name[200];        // Ex: "fifo"
-    char display_name[200]; // Ex: "FIFO"
-    int needs_quantum;     // 1 si c'est round_robin
+    char filename[200];
+    char name[200];
+    char display_name[200];
+    int needs_quantum;
 } AlgoInfo;
 
 static AlgoInfo *g_algos = NULL;
 static int g_algo_count = 0;
 
-// Palette de couleurs moderne et professionnelle
+
 #define BG_PRIMARY      0.09, 0.09, 0.11
 #define BG_SECONDARY    0.13, 0.14, 0.17
 #define BG_CARD         0.16, 0.17, 0.21
@@ -42,10 +43,8 @@ static double process_colors[][3] = {
     {0.96, 0.45, 0.61}, {0.31, 0.87, 0.91}, {0.95, 0.58, 0.31}, {0.51, 0.78, 0.38},
 };
 
-// Déclaration forward
 static void show_results_window(GtkWidget *parent_window);
 
-// Charger les algorithmes depuis le dossier politiques
 static void load_algorithms() {
     DIR *dir = opendir("politiques");
     if (!dir) {
@@ -53,42 +52,35 @@ static void load_algorithms() {
         exit(1);
     }
 
-    // Allocation initiale
     g_algos = malloc(sizeof(AlgoInfo) * 50);
     g_algo_count = 0;
 
     struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
-        // Ignorer . et ..
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
             continue;
 
-        // Ne garder que les .c
         int len = strlen(entry->d_name);
         if (len < 3 || strcmp(entry->d_name + len - 2, ".c") != 0)
             continue;
 
-        // Stocker le nom du fichier
         strcpy(g_algos[g_algo_count].filename, entry->d_name);
         
-        // Extraire le nom sans extension
         strcpy(g_algos[g_algo_count].name, entry->d_name);
         g_algos[g_algo_count].name[len - 2] = '\0';
         
-        // Créer le nom d'affichage avec icône
         if (strcmp(g_algos[g_algo_count].name, "fifo") == 0) {
-            strcpy(g_algos[g_algo_count].display_name, "🚀  FIFO");
+            strcpy(g_algos[g_algo_count].display_name, "  FIFO");
         } else if (strcmp(g_algos[g_algo_count].name, "round_robin") == 0) {
-            strcpy(g_algos[g_algo_count].display_name, "🔄  Round Robin");
+            strcpy(g_algos[g_algo_count].display_name, "  Round Robin");
             g_algos[g_algo_count].needs_quantum = 1;
         } else if (strcmp(g_algos[g_algo_count].name, "priorite") == 0) {
-            strcpy(g_algos[g_algo_count].display_name, "⭐  Priorité");
+            strcpy(g_algos[g_algo_count].display_name, " Priorité");
         } else if (strcmp(g_algos[g_algo_count].name, "multi_level") == 0) {
-            strcpy(g_algos[g_algo_count].display_name, "🏢  Multi-Level");
+            strcpy(g_algos[g_algo_count].display_name, " Multi Level dynamique");
         } else if (strcmp(g_algos[g_algo_count].name, "multi_level_static") == 0) {
-            strcpy(g_algos[g_algo_count].display_name, "🏢  Multi-Level Static");
+            strcpy(g_algos[g_algo_count].display_name, "  Multi Level Static");
         } else {
-            // Nom générique pour les autres algorithmes (limiter la taille)
             char safe_name[180];
             strncpy(safe_name, g_algos[g_algo_count].name, sizeof(safe_name) - 1);
             safe_name[sizeof(safe_name) - 1] = '\0';
@@ -532,19 +524,16 @@ static void show_results_window(GtkWidget *parent_window) {
     gtk_widget_show_all(result_window);
 }
 
-// Callback pour les radio buttons
 static void on_algo_selected(GtkWidget *widget, gpointer data) {
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) {
         selected_algo = GPOINTER_TO_INT(data);
     }
 }
 
-// Callback pour le bouton exécuter
 static void on_execute_algo(GtkWidget *widget, gpointer data) {
     (void)widget;
     GtkWidget *window = GTK_WIDGET(data);
     
-    // Si Round Robin est sélectionné, demander le quantum
     if (g_algos[selected_algo].needs_quantum) {
         GtkWidget *dialog = gtk_dialog_new_with_buttons(
             "Configuration Round Robin", GTK_WINDOW(window),
@@ -577,7 +566,6 @@ static void on_execute_algo(GtkWidget *widget, gpointer data) {
         if (response != GTK_RESPONSE_OK) return;
     }
     
-    // Libérer l'ancien résultat
     if (current_result) {
         if (current_result->processes) free(current_result->processes);
         free(current_result);
@@ -588,17 +576,14 @@ static void on_execute_algo(GtkWidget *widget, gpointer data) {
     
     capture_mode = 1;
     
-    // Compiler et exécuter l'algorithme sélectionné dynamiquement
     char path[300];
     char lib[300];
     
     snprintf(path, sizeof(path), "politiques/%s", g_algos[selected_algo].filename);
     snprintf(lib, sizeof(lib), "politiques/%s.so", g_algos[selected_algo].filename);
     
-    // Nettoyer l'ancien .so
     remove(lib);
     
-    // Compilation dynamique
     char cmd[800];
     snprintf(cmd, sizeof(cmd),
              "gcc -shared -fPIC -Isrc %s -o %s 2>/dev/null",
@@ -610,7 +595,6 @@ static void on_execute_algo(GtkWidget *widget, gpointer data) {
         return;
     }
     
-    // Charger la bibliothèque
     void *handle = dlopen(lib, RTLD_NOW);
     if (!handle) {
         printf("Erreur dlopen: %s\n", dlerror());
@@ -620,9 +604,7 @@ static void on_execute_algo(GtkWidget *widget, gpointer data) {
     
     printf("\n>>> Exécution de : %s\n", g_algos[selected_algo].name);
     
-    // Exécuter selon le type
     if (g_algos[selected_algo].needs_quantum) {
-        // Round Robin avec quantum
         void (*rr_func)(Process*, int, int) = dlsym(handle, g_algos[selected_algo].name);
         if (!rr_func) {
             printf("Erreur dlsym: %s\n", dlerror());
@@ -632,7 +614,6 @@ static void on_execute_algo(GtkWidget *widget, gpointer data) {
         }
         rr_func(g_processes, g_process_count, rr_quantum);
     } else {
-        // Autres algorithmes
         void (*alg_func)(Process*, int) = dlsym(handle, g_algos[selected_algo].name);
         if (!alg_func) {
             printf("Erreur dlsym: %s\n", dlerror());
@@ -652,7 +633,6 @@ void lancer_interface_gtk(Process procs[], int count) {
     g_processes = procs;
     g_process_count = count;
     
-    // Charger les algorithmes disponibles
     load_algorithms();
     
     if (g_algo_count == 0) {
@@ -706,13 +686,20 @@ void lancer_interface_gtk(Process procs[], int count) {
         "  box-shadow: 0 10px 30px rgba(87, 164, 250, 0.5); "
         "}"
         "label { color: #F2F5F9; }"
-        "separator { background: #35363F; min-height: 1px; }", -1, NULL);
+        "separator { background: #35363F; min-height: 1px; }",
+        -1, NULL);
+    
     gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
-        GTK_STYLE_PROVIDER(css_provider), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+        GTK_STYLE_PROVIDER(css_provider),
+        GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+    
+    GtkWidget *scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
+                                   GTK_POLICY_NEVER,
+                                   GTK_POLICY_AUTOMATIC);
     
     GtkWidget *main_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     
-    // Header avec gradient
     GtkWidget *header_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
     gtk_widget_set_margin_start(header_box, 50);
     gtk_widget_set_margin_end(header_box, 50);
@@ -721,29 +708,35 @@ void lancer_interface_gtk(Process procs[], int count) {
     
     GtkWidget *title = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(title),
-        "<span font='34' weight='bold'>"
-        "<span foreground='#57A4FA'>⚡</span> "
-        "<span foreground='#F2F5F9'>Ordonnanceur</span> "
-        "<span foreground='#9E82FA'>de Processus</span>"
-        "</span>");
+        "<span font='24' weight='bold' foreground='#57A4FA'>"
+        "⚡ </span>"
+        "<span font='28' weight='bold' foreground='#F2F5F9'>"
+        "Ordonnanceur </span>"
+        "<span font='28' weight='bold' foreground='#57A4FA'>"
+        "de Processus</span>");
     gtk_box_pack_start(GTK_BOX(header_box), title, FALSE, FALSE, 0);
     
     GtkWidget *subtitle = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(subtitle),
-        "<span font='13' foreground='#A6AEC0'>"
+        "<span font='12' foreground='#B0B5BA'>"
         "Simulation et analyse avancée d'algorithmes d'ordonnancement CPU"
         "</span>");
     gtk_box_pack_start(GTK_BOX(header_box), subtitle, FALSE, FALSE, 0);
     
-    char info[300];
+    char info[512];
     snprintf(info, sizeof(info),
-        "<span font='12'>"
-        "<span foreground='#52D69C' weight='bold'>●</span> "
-        "<span foreground='#E8EAED'>%d processus chargés</span> "
-        "<span foreground='#7A7D87'>|</span> "
-        "<span foreground='#FAB04F'>●</span> "
-        "<span foreground='#E8EAED'>%d algorithmes disponibles</span>"
-        "</span>", count, g_algo_count);
+        "<span font='11' foreground='#8A8F95'>"
+        "● </span>"
+        "<span font='11' weight='600' foreground='#F2F5F9'>"
+        "%d processus chargés </span>"
+        "<span font='11' foreground='#57A4FA'>"
+        "| </span>"
+        "<span font='11' foreground='#8A8F95'>"
+        "● </span>"
+        "<span font='11' weight='600' foreground='#F2F5F9'>"
+        "%d algorithmes disponibles</span>",
+        count, g_algo_count);
+    
     GtkWidget *info_label = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(info_label), info);
     gtk_box_pack_start(GTK_BOX(header_box), info_label, FALSE, FALSE, 5);
@@ -753,7 +746,6 @@ void lancer_interface_gtk(Process procs[], int count) {
     GtkWidget *sep1 = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_box_pack_start(GTK_BOX(main_vbox), sep1, FALSE, FALSE, 0);
     
-    // Section des algorithmes
     GtkWidget *content_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 20);
     gtk_widget_set_margin_start(content_box, 50);
     gtk_widget_set_margin_end(content_box, 50);
@@ -762,16 +754,14 @@ void lancer_interface_gtk(Process procs[], int count) {
     
     GtkWidget *algo_title = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(algo_title),
-        "<span font='17' foreground='#F2F5F9' weight='bold'>"
-        "Sélection de l'algorithme"
-        "</span>");
+        "<span font='16' weight='bold' foreground='#F2F5F9'>"
+        "Sélection de l'algorithme</span>");
     gtk_widget_set_halign(algo_title, GTK_ALIGN_START);
     gtk_box_pack_start(GTK_BOX(content_box), algo_title, FALSE, FALSE, 5);
     
     GtkWidget *algo_subtitle = gtk_label_new(NULL);
-    char subtitle_text[400]; // Augmentation de la taille du buffer
+    char subtitle_text[400];
     
-    // Trouver FIFO dans la liste
     int fifo_index = 0;
     for (int i = 0; i < g_algo_count; i++) {
         if (strcmp(g_algos[i].name, "fifo") == 0) {
@@ -780,30 +770,27 @@ void lancer_interface_gtk(Process procs[], int count) {
         }
     }
     
-    // Limiter la taille du nom affiché
     char safe_display_name[100];
     strncpy(safe_display_name, g_algos[fifo_index].display_name, sizeof(safe_display_name) - 1);
     safe_display_name[sizeof(safe_display_name) - 1] = '\0';
     
     snprintf(subtitle_text, sizeof(subtitle_text),
-        "<span font='11' foreground='#7A7D87'>"
+        "<span font='11' foreground='#B0B5BA'>"
         "Choisissez un algorithme d'ordonnancement ci-dessous (%s par défaut)"
         "</span>", safe_display_name);
+    
     gtk_label_set_markup(GTK_LABEL(algo_subtitle), subtitle_text);
     gtk_widget_set_halign(algo_subtitle, GTK_ALIGN_START);
     gtk_box_pack_start(GTK_BOX(content_box), algo_subtitle, FALSE, FALSE, 0);
     
-    // Container pour les cartes d'algorithmes
     GtkWidget *algos_grid = gtk_grid_new();
     gtk_grid_set_column_spacing(GTK_GRID(algos_grid), 15);
     gtk_grid_set_row_spacing(GTK_GRID(algos_grid), 15);
     gtk_widget_set_margin_top(algos_grid, 20);
     
-    // Créer les radio buttons dynamiquement
     GSList *radio_group = NULL;
     
     for (int i = 0; i < g_algo_count; i++) {
-        // Créer une carte pour chaque algorithme
         GtkWidget *card = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
         GtkStyleContext *context = gtk_widget_get_style_context(card);
         gtk_style_context_add_class(context, "algo-card");
@@ -811,7 +798,6 @@ void lancer_interface_gtk(Process procs[], int count) {
         GtkWidget *radio = gtk_radio_button_new_with_label(radio_group, g_algos[i].display_name);
         radio_group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(radio));
         
-        // Sélectionner FIFO par défaut
         if (i == fifo_index) {
             gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(radio), TRUE);
             selected_algo = i;
@@ -819,7 +805,6 @@ void lancer_interface_gtk(Process procs[], int count) {
         
         g_signal_connect(radio, "toggled", G_CALLBACK(on_algo_selected), GINT_TO_POINTER(i));
         
-        // Description générique pour les algorithmes
         const char *description = "Algorithme d'ordonnancement";
         if (strcmp(g_algos[i].name, "fifo") == 0) {
             description = "Premier arrivé, premier servi";
@@ -828,15 +813,15 @@ void lancer_interface_gtk(Process procs[], int count) {
         } else if (strcmp(g_algos[i].name, "priorite") == 0) {
             description = "Exécution par ordre de priorité";
         } else if (strcmp(g_algos[i].name, "multi_level") == 0) {
-            description = "Files multiples avec feedback";
+            description = "";
         } else if (strcmp(g_algos[i].name, "multi_level_static") == 0) {
-            description = "Files multiples sans feedback";
+            description = "";
         }
         
         GtkWidget *desc_label = gtk_label_new(NULL);
         char desc_markup[300];
         snprintf(desc_markup, sizeof(desc_markup),
-            "<span font='10' foreground='#9BA1B0'>%s</span>", description);
+            "<span font='10' foreground='#8A8F95'>%s</span>", description);
         gtk_label_set_markup(GTK_LABEL(desc_label), desc_markup);
         gtk_widget_set_halign(desc_label, GTK_ALIGN_START);
         gtk_widget_set_margin_start(desc_label, 25);
@@ -852,14 +837,12 @@ void lancer_interface_gtk(Process procs[], int count) {
     
     gtk_box_pack_start(GTK_BOX(content_box), algos_grid, FALSE, FALSE, 0);
     
-    // Séparateur
     GtkWidget *sep2 = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_widget_set_margin_top(sep2, 15);
     gtk_widget_set_margin_bottom(sep2, 15);
     gtk_box_pack_start(GTK_BOX(content_box), sep2, FALSE, FALSE, 0);
     
-    // Bouton exécuter
-    GtkWidget *execute_btn = gtk_button_new_with_label("▶  Exécuter l'algorithme");
+    GtkWidget *execute_btn = gtk_button_new_with_label("▶ Exécuter l'algorithme");
     gtk_widget_set_size_request(execute_btn, 400, 60);
     gtk_widget_set_halign(execute_btn, GTK_ALIGN_CENTER);
     g_signal_connect(execute_btn, "clicked", G_CALLBACK(on_execute_algo), window);
@@ -867,18 +850,19 @@ void lancer_interface_gtk(Process procs[], int count) {
     
     gtk_box_pack_start(GTK_BOX(main_vbox), content_box, TRUE, TRUE, 0);
     
-    gtk_container_add(GTK_CONTAINER(window), main_vbox);
+    gtk_container_add(GTK_CONTAINER(scrolled_window), main_vbox);
+    
+    gtk_container_add(GTK_CONTAINER(window), scrolled_window);
+    
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     
     gtk_widget_show_all(window);
     gtk_main();
     
-    // Nettoyage
     if (current_result) {
         if (current_result->processes) free(current_result->processes);
         free(current_result);
     }
-    
     if (g_algos) {
         free(g_algos);
     }
