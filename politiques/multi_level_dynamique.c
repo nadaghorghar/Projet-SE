@@ -8,8 +8,6 @@
 #define MAX_PRIO 6
 #define FAMINE_THRESHOLD 6
 
-/* ===================== STRUCTURES ===================== */
-
 typedef struct {
     int items[MAXP];
     int size;
@@ -27,9 +25,6 @@ typedef struct {
     int quantum_used;
     int quantum_size;
 } State;
-
-/* ===================== OUTILS ===================== */
-
 static int get_quantum(int prio) {
     if (prio >= 4) return 1;
     if (prio >= 2) return 2;
@@ -89,7 +84,6 @@ static int select_next(State *s) {
     return -1;
 }
 
-/* ===================== INIT/FREE ===================== */
 
 static void init_state(State *s, int n) {
     for (int i = 0; i < MAX_PRIO; i++) 
@@ -119,29 +113,24 @@ static void free_state(State *s) {
     free(s->timeline);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   CORE: Simuler Multi-Level et retourner les résultats
-   ═══════════════════════════════════════════════════════════ */
+
 static SimulationResult simulate_multilevel(Process procs[], int n, int **init_prio_out) {
     SimulationResult result;
     State s;
     
     init_state(&s, n);
     
-    // Sauvegarder les priorités initiales
     int *init_prio = malloc(n * sizeof(int));
     for (int i = 0; i < n; i++)
         init_prio[i] = procs[i].priority;
     
     *init_prio_out = init_prio;
     
-    /* ===================== SIMULATION ===================== */
-    
     int done = 0;
 
     while (done < n && s.time < 10000) {
 
-        /* Arrivées */
+      
         for (int i = 0; i < n; i++) {
             if (procs[i].arrival == s.time && procs[i].remaining_time > 0) {
                 if (!in_any_queue(&s, i) && s.running != i) {
@@ -153,7 +142,7 @@ static SimulationResult simulate_multilevel(Process procs[], int n, int **init_p
             }
         }
 
-        /* Anti-famine */
+        
         for (int i = 0; i < n; i++) {
             if (s.wait_time[i] >= FAMINE_THRESHOLD &&
                 procs[i].priority < MAX_PRIO - 1 &&
@@ -171,7 +160,8 @@ static SimulationResult simulate_multilevel(Process procs[], int n, int **init_p
             }
         }
 
-        /* Fin de quantum */
+        
+        
         if (s.running != -1 && s.quantum_used >= s.quantum_size) {
             if (procs[s.running].priority > 0)
                 procs[s.running].priority--;
@@ -181,7 +171,8 @@ static SimulationResult simulate_multilevel(Process procs[], int n, int **init_p
             s.quantum_used = 0;
         }
 
-        /* Préemption */
+        
+        
         if (s.running != -1) {
             int best = highest_prio_waiting(&s);
             if (best > procs[s.running].priority) {
@@ -190,7 +181,8 @@ static SimulationResult simulate_multilevel(Process procs[], int n, int **init_p
             }
         }
 
-        /* Sélection */
+        
+        
         if (s.running == -1) {
             int next = select_next(&s);
             if (next != -1) {
@@ -202,7 +194,8 @@ static SimulationResult simulate_multilevel(Process procs[], int n, int **init_p
             }
         }
 
-        /* Exécution */
+        
+        
         if (s.running == -1) {
             s.timeline[s.timeline_len++] = -1;
         } else {
@@ -218,7 +211,8 @@ static SimulationResult simulate_multilevel(Process procs[], int n, int **init_p
             }
         }
         
-        /* Attente */
+      
+      
         for (int i = 0; i < n; i++)
             if (s.running != i && in_any_queue(&s, i))
                 s.wait_time[i]++;
@@ -226,7 +220,7 @@ static SimulationResult simulate_multilevel(Process procs[], int n, int **init_p
         s.time++;
     }
     
-    /* ===================== PRÉPARER LE RÉSULTAT ===================== */
+    
     
     result.procs = procs;
     result.n = n;
@@ -238,24 +232,18 @@ static SimulationResult simulate_multilevel(Process procs[], int n, int **init_p
     result.levels = NULL;
     result.total_time = s.time;
     
-    // Note: Ne pas free s.timeline, s.first_run, s.end_time car ils sont dans result
-    // Seulement libérer wait_time
     free(s.wait_time);
     
     return result;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   HELPER: Copier les résultats vers la structure GUI
-   ═══════════════════════════════════════════════════════════ */
+
 static void copy_to_gui_result(SimulationResult *result) {
     if (!current_result) return;
     
     strcpy(current_result->algo_name, "Multi-Level Dynamique");
     current_result->quantum = 0;
     current_result->process_count = result->n;
-    
-    // Copier les processus
     current_result->processes = malloc(sizeof(Process) * result->n);
     if (!current_result->processes) {
         fprintf(stderr, "Erreur: malloc échoué pour processes\n");
@@ -265,20 +253,15 @@ static void copy_to_gui_result(SimulationResult *result) {
     for (int i = 0; i < result->n; i++) {
         current_result->processes[i] = result->procs[i];
     }
-    
-    // Copier la timeline
     current_result->timeline_len = result->timeline_len;
     for (int i = 0; i < result->timeline_len; i++) {
         current_result->timeline[i] = result->timeline[i];
     }
-    
-    // Copier start/end
     for (int i = 0; i < result->n; i++) {
         current_result->start[i] = result->start[i];
         current_result->end[i] = result->end[i];
     }
-    
-    // Calculer moyennes
+
     float sumT = 0.0f, sumW = 0.0f;
     for (int i = 0; i < result->n; i++) {
         int duration = 0;
@@ -295,16 +278,10 @@ static void copy_to_gui_result(SimulationResult *result) {
     current_result->avg_wait = sumW / result->n;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   MAIN: Point d'entrée Multi-Level (GUI ou Console)
-   ═══════════════════════════════════════════════════════════ */
+
 void multi_level(Process procs[], int n) {
     int *init_prio = NULL;
-    
-    // ★★★ UNE SEULE SIMULATION ★★★
     SimulationResult result = simulate_multilevel(procs, n, &init_prio);
-    
-    // Router selon le mode
     if (capture_mode && current_result) {
         // Mode GUI: copier vers current_result
         copy_to_gui_result(&result);
@@ -313,7 +290,6 @@ void multi_level(Process procs[], int n) {
         free(result.start);
         free(result.end);
     } else {
-        // Mode Console: afficher directement
         const char *rules =
             "╔═══════════════════════════════════════════════════════════════════════╗\n"
             "║     ORDONNANCEMENT MULTI-NIVEAUX À PRIORITÉS DYNAMIQUES               ║\n"
