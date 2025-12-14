@@ -279,7 +279,7 @@ static void copy_to_gui_result(SimulationResult *result) {
 }
 
 
-void multi_level(Process procs[], int n) {
+void multi_level_dynamique(Process procs[], int n) {
     int *init_prio = NULL;
     SimulationResult result = simulate_multilevel(procs, n, &init_prio);
     if (capture_mode && current_result) {
