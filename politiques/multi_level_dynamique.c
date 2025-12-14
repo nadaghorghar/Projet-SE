@@ -283,7 +283,6 @@ void multi_level(Process procs[], int n) {
     int *init_prio = NULL;
     SimulationResult result = simulate_multilevel(procs, n, &init_prio);
     if (capture_mode && current_result) {
-        // Mode GUI: copier vers current_result
         copy_to_gui_result(&result);
         free(init_prio);
         free(result.timeline);
