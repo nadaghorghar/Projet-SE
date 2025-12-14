@@ -20,11 +20,11 @@ $(BUILD_DIR):
 $(TARGET): $(OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-# Règle générique pour les fichiers .c dans src/
+
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Règle générique pour les fichiers .c dans politiques/
+
 $(BUILD_DIR)/%.o: $(POLITIQUES_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
