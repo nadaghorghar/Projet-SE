@@ -11,7 +11,7 @@ typedef struct {
     int remaining_time;
 } Process;
 
-// Fonctions de lecture des processus
+
 int read_processes_from_file(const char *filename, Process procs[], int *count);
 
 #endif
