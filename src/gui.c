@@ -1,4 +1,3 @@
-
 #include <gtk/gtk.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -77,7 +76,7 @@ static void load_algorithms() {
         } else if (strcmp(g_algos[g_algo_count].name, "priorite") == 0) {
             strcpy(g_algos[g_algo_count].display_name, " Priorité");
         } else if (strcmp(g_algos[g_algo_count].name, "multi_level") == 0) {
-            strcpy(g_algos[g_algo_count].display_name, " Multi Level dynamique");
+            strcpy(g_algos[g_algo_count].display_name, " Multi Level Dynamique");
         } else if (strcmp(g_algos[g_algo_count].name, "multi_level_static") == 0) {
             strcpy(g_algos[g_algo_count].display_name, "  Multi Level Static");
         } else {
